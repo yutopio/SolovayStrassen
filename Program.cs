@@ -4,13 +4,23 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.Write("Input: ");
-        var input = Console.ReadLine();
-        Console.WriteLine();
+        for (var i = 0; i < 10000; i++)
+        {
+            var isPrime = IsPrime(i);
+            if (SolovayStrassen(i) != isPrime)
+                Console.WriteLine(isPrime ? "ERROR {0}" : "Mistake {0}", i);
+        }
+    }
 
-        int n;
-        if (!int.TryParse(input, out n)) return;
-        Console.WriteLine(SolovayStrassen(n) ? "Probably PRIME" : "COMPOSITE");
+    static bool IsPrime(int n)
+    {
+        if (n == 2) return true;
+        else if (n < 2 || (n & 1) == 0) return false;
+
+        var u = (int)Math.Floor(Math.Sqrt(n)) + 1;
+        for (var t = 3; t < u; t++)
+            if (n % t == 0) return false;
+        return true;
     }
 
     static bool SolovayStrassen(int n)
