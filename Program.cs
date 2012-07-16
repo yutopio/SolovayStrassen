@@ -1,70 +1,79 @@
 ﻿using System;
+using System.Numerics;
 
 class Program
 {
-    static Random rnd = new Random(100);
+    static Random rnd = new Random();
 
     static void Main(string[] args)
     {
-        var primes = Eratosthenes(40000);
-        for (var i = 3; i < 40000; i += 2)
-            if (SolovayStrassen(i) != primes[i])
-                Console.WriteLine(primes[i] ? "ERROR {0}" : "Mistake {0}", i);
+        const int mersenneUpper = 1000;
+        const int testIteration = 3;
+
+        // from http://en.wikipedia.org/wiki/Mersenne_prime
+        var mersenneP = new[] { 2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127,
+            521, 607, 1279, 2203, 2281, 3217, 4253, 4423, 9689, 9941, 11213,
+            19937, 21701, 23209, 44497, 86243, 110503, 132049, 216091, 756839,
+            859433, 1257787, 1398269, 2976221, 3021377, 6972593, 13466917,
+            20996011, 24036583, 25964951, 30402457, 32582657, 37156667,
+            42643801, 43112609 };
+
+        for (var i = 0; i < mersenneUpper; i++)
+        //foreach (var i in mersenneP)
+        {
+            var n = BigInteger.Pow(2, i) - 1;
+
+            var start = DateTime.Now;
+            var j = 0;
+            for (; j < testIteration; j++)
+                if (!SolovayStrassen(n)) break;
+            var end = DateTime.Now;
+
+            Console.WriteLine("{0}{1} {2} after {3}{4} iterations by {5}",
+                new string(' ', 8 - i.ToString().Length),
+                i.ToString(),
+                j == testIteration ? "Probably PRIME" : "     COMPOSITE",
+                new string(' ', testIteration.ToString().Length - j.ToString().Length),
+                j.ToString(),
+                end - start);
+        }
     }
 
-    static bool[] Eratosthenes(int n)
-    {
-        var ret = new bool[n];
-        ret[2] = true;
-        for (var i = 3; i < n; i += 2) ret[i] = true;
-
-        var u = (int)Math.Floor(Math.Sqrt(n)) + 1;
-        for (var i = 3; i < u; i += 2)
-            for (var j = i * i; j < n; j += i)
-                ret[j] = false;
-
-        return ret;
-    }
-
-    static bool SolovayStrassen(int n)
+    static bool SolovayStrassen(BigInteger n)
     {
         if (n == 2) return true;
-        else if (n < 2 || (n & 1) == 0) return false;
+        else if (n < 2 || n.IsEven) return false;
 
-        var a = rnd.Next(1, n);
+        var a = BigRandom(n);
 
-        if (Gcd(a, n) != 1) return false;
-        else return PowMod(a, (n - 1) / 2, n) == Jacobi(a, n);
+        if (BigInteger.GreatestCommonDivisor(a, n) != 1) return false;
+        else return BigInteger.ModPow(a, (n - 1) / 2, n) == Jacobi(a, n);
     }
 
-    static int Gcd(int a, int b)
+    static BigInteger BigRandom(BigInteger n)
     {
-        if (a <= 0 || b <= 0)
-            throw new ArgumentOutOfRangeException();
-        else if (a > b) goto StartB;
+        var array = n.ToByteArray();
+        int last;
 
-    StartA:
-        // b >= a > 0
-        b %= a;
-        if (b == 0) return a;
+        byte temp;
+        while ((temp = array[last = array.Length - 1]) == 0)
+            Array.Resize<byte>(ref array, last);
+        rnd.NextBytes(array);
+        array[last] = (byte)rnd.Next(last == 0 ? 2 : 0, temp);
 
-    StartB:
-        // a > b > 0
-        a %= b;
-        if (a == 0) return b;
-        goto StartA;
+        return new BigInteger(array);
     }
 
-    static int Jacobi(int a, int n)
+    static BigInteger Jacobi(BigInteger a, BigInteger n)
     {
         var flag = false;
         var N = n;
 
     Start:
         if (a < 2) return flag ? N - a : a;
-        if ((a & 1) == 0)
+        if (a.IsEven)
         {
-            switch (n % 8)
+            switch ((int)(n % 8))
             {
                 case 1:
                 case 7: a /= 2; goto Start;
@@ -77,22 +86,5 @@ class Program
         a = n % a;
         n = t;
         goto Start;
-    }
-
-    static int PowMod(int @base, int pow, int mod)
-    {
-        if (@base < 0 || pow < 0 || mod <= 0 || mod > 46340)
-            throw new ArgumentOutOfRangeException();
-        @base %= mod;
-
-        var ret = 1;
-        while (pow != 0)
-        {
-            if ((pow & 1) == 1)
-                ret = (ret * @base) % mod;
-            @base = (@base * @base) % mod;
-            pow >>= 1;
-        }
-        return ret;
     }
 }
