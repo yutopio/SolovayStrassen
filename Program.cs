@@ -2,14 +2,22 @@
 
 class Program
 {
+    static Random rnd = new Random(100);
+
     static void Main(string[] args)
     {
-        for (var i = 0; i < 10000; i++)
-        {
-            var isPrime = IsPrime(i);
-            if (SolovayStrassen(i) != isPrime)
-                Console.WriteLine(isPrime ? "ERROR {0}" : "Mistake {0}", i);
-        }
+        int test = 0, mistake = 0;
+        for (var j = 0; j < 1000; j++)
+            for (var i = 3; i < 10000; i += 2, test++)
+            {
+                var isPrime = IsPrime(i);
+                if (SolovayStrassen(i) != isPrime)
+                {
+                    if (isPrime) Console.Error.WriteLine("ERROR");
+                    mistake++;
+                }
+            }
+        Console.WriteLine("Mistake rate: {0:0.00}%", mistake * 100d / test);
     }
 
     static bool IsPrime(int n)
@@ -28,7 +36,6 @@ class Program
         if (n == 2) return true;
         else if (n < 2 || (n & 1) == 0) return false;
 
-        var rnd = new Random();
         var a = rnd.Next(1, n);
 
         if (Gcd(a, n) != 1) return false;
